@@ -1,0 +1,150 @@
+.chat {
+  flex: 2;
+  border-left: 1px solid #dddddd35;
+  border-right: 1px solid #dddddd35;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  
+  .top{
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #dddddd35;
+    
+    .user {
+      gap: 15px;
+      display: flex;
+      align-items: center;
+      
+      img {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+      
+      .texts {
+        flex-direction: column;
+        display: flex;
+        gap: 5px;
+      }
+      
+      span {
+        font-size: 18px;
+        font-weight: bold;
+      }
+      p {
+        color: #fafafafa;
+        font-size: 14px;
+        font-weight: 300;
+      }
+    }
+  }
+  
+  .icons {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .center{
+    padding: 20px;
+    flex: 1;
+    overflow: scroll;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    
+    .message {
+      max-width: 70%;
+      display: flex;
+      gap: 15px;
+      
+      &.own {
+        align-self: flex-end;
+        
+        .texts {
+          p {
+            background-color: rgb(88,126,75);
+            border-radius: 10px 10px 0 10px;
+          }
+        }
+      }
+      
+      img {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+      .texts {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        
+        img {
+          width: 100%;
+          height: 300px;
+          border-radius: 10px;
+          object-fit: cover;
+        }
+        
+        
+        p {
+          padding: 15px;
+          background: rgba(73,107,61,0.927);
+          border-radius: 10px 10px 10px 0;
+        }
+        
+        span {
+          font-size: 13px;
+        }
+      }
+    }
+  }
+    .bottom{
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid #dddddd35;
+      gap: 15px;
+      margin-top: auto;
+    
+     input {
+       flex: 1;
+       background-color: rgba(102,106,100,0.907);
+       border: none;
+       outline: none;
+       border-radius: 10px;
+       padding: 15px;
+       font-size: 16px;
+      }
+       
+       input::placeholder {
+         color: #fff;
+     }
+     
+     .emoji {
+       position: relative;
+       
+       .picker {
+         position: absolute;
+         bottom: 50px;
+         left: 0;
+       }
+     }
+     
+     .sendButton {
+       background:rgb(88,126,75);
+       border: none;
+       border-radius: 5px;
+       padding: 8px 15px;
+       color: #fff;
+       cursor: pointer;
+     }
+    }
+  }
+}
