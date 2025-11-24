@@ -25,6 +25,10 @@ body {
   backdrop-filter: blur(10px) saturate(180%);
   border: 1px solid rgba(255,255,255, 0.123);
   display: flex;
+  
+  .list, .chat, .detail {
+  min-width: 0;
+}
 }
 
 

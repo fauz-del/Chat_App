@@ -8,12 +8,13 @@ const UserInfo = () => {
      <div className= "user">
        <img src= { Kitty } alt= "" />
        <h2>Joe Doe</h2>
-     </div>
-     <div className= "icons">
-       <Pencil size={20} />
-       <Video size={20} />
-       <MoreHorizontal size={20} />
-     </div>
+  
+       <div className= "icons">
+         <Pencil size={20} />
+         <Video size={20} />
+         <MoreHorizontal size={20} />
+        </div>
+      </div>
     </div>
   );
 }
