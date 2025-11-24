@@ -1,4 +1,4 @@
-import './chatlist.css';
+import './chatlist.scss';
 import { useState } from "react";
 import { Search, Plus, Minus } from "lucide-react";
 import Kitty from "../../../utils/Kitty.jpg";

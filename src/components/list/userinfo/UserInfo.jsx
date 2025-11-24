@@ -1,4 +1,4 @@
-import './userinfo.css';
+import './userinfo.scss';
 import { Pencil, MoreHorizontal, Video } from "lucide-react";
 import Kitty from "../../../utils/Kitty.jpg";
 
