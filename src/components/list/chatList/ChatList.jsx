@@ -1,6 +1,7 @@
 import './chatlist.scss';
 import { useState } from "react";
 import { Search, Plus, Minus } from "lucide-react";
+import AddUser from "./addUser/addUser";
 import Kitty from "../../../utils/Kitty.jpg";
 
 const ChatList = () => {
@@ -61,9 +62,7 @@ const ChatList = () => {
          <p>Hello</p>
        </div>
       </div>
-      
-      
-      
+      {addMode && <AddUser />}
     </div>
   );
 }

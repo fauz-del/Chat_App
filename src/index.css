@@ -18,7 +18,7 @@ body {
 }
 
 .container {
-  width: 90vw;
+  width: 98vw;
   height: 90vh;
   background-color: rgba(94,101,91,0.354);
   border-radius: 12px;
@@ -26,9 +26,9 @@ body {
   border: 1px solid rgba(255,255,255, 0.123);
   display: flex;
   
-  .list, .chat, .detail {
-  min-width: 0;
-}
+  /*.list, .chat, .detail {
+  min-width: 0;*
+}*/
 }
 
 
