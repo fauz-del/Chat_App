@@ -1,11 +1,13 @@
-// src/main.jsx
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
-import "./index.css"; // You can use Tailwind or custom CSS
+import "./index.css";
+import { BrowserRouter } from "react-router-dom";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <App />
+    <BrowserRouter basename="/Chat_App/">
+      <App />
+    </BrowserRouter>
   </React.StrictMode>
 );
