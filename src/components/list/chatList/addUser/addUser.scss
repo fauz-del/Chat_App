@@ -1,63 +1,82 @@
 .addUser {
-  width: max-content;
-  height: max-content;
+  width: 400px;
+  max-width: 90%;
+  background-color: rgba(10, 12, 10, 0.85);
   padding: 25px;
-  background-color: rgba(10,12,10,0.804);
   border-radius: 10px;
   position: absolute;
-  top: 0;
-  bottom: 0;
-  right: 0;
-  left: 0;
-  margin: auto;
-  
-  form {
-    display: flex;
-    gap: 20px;
-    
-    input {
-      padding: 20px;
-      border-radius: 10px;
-      border: none;
-      outline: none;
-    }
-    
-    button {
-     padding: 15px;
-     background-color: rgb(50,106,50);
-     border-radius: 10px;
-     color: white;
-     border: none;
-     cursor: pointer;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+  z-index: 100;
+
+  input {
+    width: 100%;
+    padding: 15px 20px;
+    border-radius: 10px;
+    border: none;
+    outline: none;
+    margin-bottom: 20px;
+    font-size: 14px;
+    background-color: #1a1a1a;
+    color: #fff;
+
+    &::placeholder {
+      color: #bbb;
     }
   }
-  
+
   .user {
-    margin-top: 50px;
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+    &:last-child {
+      border-bottom: none;
+    }
+
     .detail {
       display: flex;
       align-items: center;
-      gap: 20px;
-      
+      gap: 15px;
+
       img {
-        width: 50px;
-        height: 50px;
+        width: 45px;
+        height: 45px;
         border-radius: 50%;
         object-fit: cover;
+        border: 2px solid #32aa32;
+      }
+
+      span {
+        color: #fff;
+        font-weight: 500;
       }
     }
-    
+
     button {
-     padding: 10px;
-     background-color: rgb(50,106,50);
-     border-radius: 10px;
-     color: white;
-     border: none;
-     cursor: pointer;
+      padding: 8px 15px;
+      background-color: #32aa32;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s ease-in-out;
+
+      &:hover {
+        background-color: #2b8a2b;
+      }
     }
+  }
+
+  p {
+    color: #bbb;
+    text-align: center;
+    margin-top: 15px;
+    font-size: 14px;
   }
 }

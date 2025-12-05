@@ -2,13 +2,15 @@ import './detail.scss';
 import Kitty from "../../utils/Kitty.jpg";
 import { ArrowUp, ArrowDown, Download } from "lucide-react";
 
-const Detail = () => {
+const Detail = ({ selectedUser }) => {
+  if (!selectedUser) return null;
+
   return (
     <div className="detail">
       <div className="user">
-        <img src={Kitty} alt="" />
-        <h2>Jane Mattews</h2>
-        <p>Lorem ipsum dolor sit amet.</p>
+        <img src={selectedUser.avatar_url || Kitty} alt="" />
+        <h2>{selectedUser.username}</h2>
+        <p>{selectedUser.status === "online" ? "Online" : "Offline"}</p>
       </div>
 
       <div className="info">
@@ -41,14 +43,6 @@ const Detail = () => {
             </div>
             <Download size={20} className="ic icon" />
           </div>
-
-          <div className="photoItem">
-            <div className="photoDetail">
-              <img src="https://i.imgur.com/ianNcjf.jpeg" alt="" />
-              <span>photo_2025-4.png</span>
-            </div>
-            <Download size={20} className="ic icon" />
-          </div>
           <div className="photoItem">
             <div className="photoDetail">
               <img src="https://i.imgur.com/ianNcjf.jpeg" alt="" />
@@ -65,7 +59,7 @@ const Detail = () => {
           </div>
         </div>
         <button>Block User</button>
-        <button className= "logout">Logout</button>
+        <button className="logout">Logout</button>
       </div>
     </div>
   );

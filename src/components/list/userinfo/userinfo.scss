@@ -8,21 +8,168 @@
     display: flex;
     align-items: center;
     gap: 20px;
-   
+
     img {
       width: 40px;
       height: 40px;
       border-radius: 50%;
       object-fit: cover;
     }
-    
-   .icons {
-     display: flex;
-     align-items: center;
-     gap: 6px;
-   }
-   h2 {
-     font-size: 17px;
-   }
+
+    h2 {
+      font-size: 20px;
+      margin: 0;
+      color: #fff;
+    }
+
+    .status {
+      font-size: 13px;
+      opacity: 0.8;
+
+      &.online {
+        color: #4caf50;
+      }
+
+      &.offline {
+        color: #f44336;
+      }
+    }
+  }
+
+  .icons {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    svg {
+      color: #ddd;
+      cursor: pointer;
+      transition: 0.2s;
+
+      &:hover {
+        color: #fff;
+        transform: scale(1.1);
+      }
+    }
+  }
+}
+
+/* ---------------------- */
+/* EDIT PROFILE MODAL UI  */
+/* ---------------------- */
+
+.edit-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.edit-content {
+  background: #1e1e1e;
+  padding: 25px;
+  width: 350px;
+  border-radius: 12px;
+  color: #fff;
+  position: relative;
+  animation: popIn 0.2s ease-out;
+
+  .close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    color: #aaa;
+    cursor: pointer;
+
+    &:hover {
+      color: #fff;
+    }
+  }
+
+  h3 {
+    margin: 0 0 15px 0;
+    font-size: 22px;
+    text-align: center;
+  }
+
+  .avatar-preview {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 15px;
+
+    img {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #444;
+    }
+  }
+
+  .file-input {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+
+    label {
+      background: #333;
+      padding: 8px 15px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.2s;
+
+      &:hover {
+        background: #444;
+      }
+    }
+
+    input {
+      display: none;
+    }
+  }
+
+  input[type="text"] {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    background: #2a2a2a;
+    color: #fff;
+    margin-bottom: 20px;
+    font-size: 15px;
+
+    &:focus {
+      outline: 1px solid #555;
+    }
+  }
+
+  .save-btn {
+    width: 100%;
+    padding: 10px;
+    background: #4caf50;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.2s;
+
+    &:hover {
+      background: #45a049;
+    }
+  }
+}
+
+/* Animation */
+@keyframes popIn {
+  from {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
   }
 }

@@ -1,75 +1,91 @@
 .chatlist {
   flex: 1;
-  overflow: scroll;
-   .search {
-     display: flex;
-     align-items: center;
-     gap: 10px;
-     padding: 10px;
-     
+  overflow: auto;
+
+  .search {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+
     .searchBar {
-       flex: 1;
-       display: flex;
-       align-items: center;
-       gap: 20px;
-       padding: 10px;
-       border-radius: 10px;
-       background-color:rgba(102,106,100,0.907);
-       
-       input {
-         background-color: transparent;
-         border: none;
-         outline: none;
-         color: #fff;
-         flex: 1;
-       }
-       
-       input::placeholder{
-         color: #fff;
-       }
-      }
-      
-    .add {
-        display: flex;
-        align-items: center;
-        width: 30px;
-        height: 30px;
-        background-color:rgba(102,106,100,0.907);
-        padding: 10px;
-        border-radius: 10px;
-        cursor: pointer;
-      }
-    }
-    
-    .item {
+      flex: 1;
       display: flex;
       align-items: center;
-      padding: 20px;
-      gap: 20px;
-      border-bottom: 1px solid #dddddd35;
-      cursor: pointer;
-      
-      img {
-       width: 50px;
-       height: 50px;
-       border-radius: 50%;
-       object-fit: cover;
+      gap: 10px;
+      padding: 10px;
+      border-radius: 10px;
+      background-color: rgba(102,106,100,0.9);
+
+      input {
+        background-color: transparent;
+        border: none;
+        outline: none;
+        color: #fff;
+        flex: 1;
+      }
+      input::placeholder {
+        color: #fff;
+      }
     }
-    
+
+    .add {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      background-color: rgba(102,106,100,0.9);
+      border-radius: 10px;
+      cursor: pointer;
+    }
+  }
+
+  .item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    border-bottom: 2px solid #dddddd35;
+
+    &:hover {
+      background-color: rgba(200, 200, 200, 0.1);
+    }
+
+    &.selected {
+      background-color: rgba(0, 150, 0, 0.2); // highlight selected user
+    }
+
+    img {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
     .texts {
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      
+      gap: 5px;
+
       span {
         font-weight: 500;
+        color: #fff;
       }
+
       p {
         font-size: 14px;
         font-weight: 300;
+
+        &.status.online {
+          color: #0f0; // green for online
+        }
+        &.status.offline {
+          color: #f00; // red for offline
+        }
       }
     }
-    }
-    
   }
-   
+}
