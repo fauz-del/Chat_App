@@ -16,55 +16,98 @@ const UserInfo = ({ currentUser }) => {
   const [newAvatar, setNewAvatar] = useState({ file: null, url: "" });
 
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser?.id) return;
 
     let channel;
 
-    const loadProfile = async () => {
-      // Fetch profile from the "users" table
-      const { data: profile, error } = await supabase
-        .from("users")
-        .select("username, avatar_url, status")
-        .eq("id", currentUser.id)
-        .single();
-
-      if (error) {
-        console.error("Error fetching profile:", error);
-        return;
+    const goOnline = async () => {
+      try {
+        await supabase.from("users").update({ status: "online" }).eq("id", currentUser.id);
+        setUserInfo((prev) => ({ ...prev, status: "online" }));
+      } catch (err) {
+        console.error("Error setting online:", err);
       }
+    };
 
-      setUserInfo({
-        username: profile.username || "",
-        avatar_url: profile.avatar_url || Kitty,
-        status: profile.status || "offline",
-      });
+    const goOffline = async () => {
+      try {
+        await supabase.from("users").update({ status: "offline" }).eq("id", currentUser.id);
+        setUserInfo((prev) => ({ ...prev, status: "offline" }));
+      } catch (err) {
+        console.error("Error setting offline:", err);
+      }
+    };
 
-      // Subscribe to real-time updates
-      channel = supabase
-        .channel("user-status")
-        .on(
-          "postgres_changes",
-          {
-            event: "UPDATE",
-            schema: "public",
-            table: "users",
-            filter: `id=eq.${currentUser.id}`,
-          },
-          (payload) => {
-            setUserInfo((prev) => ({
-              ...prev,
-              username: payload.new.username,
-              avatar_url: payload.new.avatar_url || Kitty,
-              status: payload.new.status || "offline",
-            }));
-          }
-        )
-        .subscribe();
+    const loadProfile = async () => {
+      try {
+        
+        const { data: profile, error } = await supabase
+          .from("users")
+          .select("username, avatar_url, status")
+          .eq("id", currentUser.id)
+          .maybeSingle();
+
+        if (error) throw error;
+
+        if (!profile) {
+          const { error: insertError } = await supabase.from("users").insert({
+            id: currentUser.id,
+            username: "New User",
+            avatar_url: null,
+            status: "offline",
+          });
+          if (insertError) throw insertError;
+
+          setUserInfo({
+            username: "New User",
+            avatar_url: Kitty,
+            status: "offline",
+          });
+        } else {
+          setUserInfo({
+            username: profile.username || "New User",
+            avatar_url: profile.avatar_url || Kitty,
+            status: profile.status || "offline",
+          });
+        }
+
+        await goOnline();
+
+        channel = supabase
+          .channel("user-status")
+          .on(
+            "postgres_changes",
+            { event: "UPDATE", schema: "public", table: "users" },
+            (payload) => {
+              if (payload.new.id === currentUser.id) {
+                setUserInfo((prev) => ({
+                  ...prev,
+                  username: payload.new.username || prev.username,
+                  avatar_url: payload.new.avatar_url || prev.avatar_url,
+                  status: payload.new.status || prev.status,
+                }));
+              }
+            }
+          )
+          .subscribe();
+      } catch (err) {
+        console.error("Error loading profile:", err);
+      }
     };
 
     loadProfile();
 
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") goOnline();
+      else goOffline();
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    window.addEventListener("beforeunload", goOffline);
+
     return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("beforeunload", goOffline);
       if (channel) supabase.removeChannel(channel);
     };
   }, [currentUser]);
@@ -89,31 +132,39 @@ const UserInfo = ({ currentUser }) => {
 
     let avatarUrl = userInfo.avatar_url;
 
-    // Upload new avatar if selected
     if (newAvatar.file) {
-      const filePath = `avatars/${currentUser.id}-${Date.now()}`;
-      const { error: uploadError } = await supabase.storage
-        .from("avatars")
-        .upload(filePath, newAvatar.file);
+      try {
+        const fileExtension = newAvatar.file.name.split(".").pop();
+        const filePath = `chat_images/${currentUser.id}-${Date.now()}.${fileExtension}`;
 
-      if (uploadError) return alert("Error uploading image");
+        const { error: uploadError } = await supabase.storage
+          .from("chat_images")
+          .upload(filePath, newAvatar.file);
 
-      const { data } = await supabase.storage
-        .from("avatars")
-        .getPublicUrl(filePath);
+        if (uploadError) throw uploadError;
 
-      avatarUrl = data.publicUrl;
+        const { data } = supabase.storage.from("chat_images").getPublicUrl(filePath);
+        avatarUrl = data.publicUrl;
+      } catch (err) {
+        console.error("Error uploading avatar:", err);
+        return alert("Error uploading avatar");
+      }
     }
 
-    const { error } = await supabase
-      .from("users")
-      .update({ username: newUsername, avatar_url: avatarUrl })
-      .eq("id", currentUser.id);
+    try {
+      const { error } = await supabase
+        .from("users")
+        .update({ username: newUsername, avatar_url: avatarUrl })
+        .eq("id", currentUser.id);
 
-    if (error) return alert("Error updating profile");
+      if (error) throw error;
 
-    setUserInfo({ ...userInfo, username: newUsername, avatar_url: avatarUrl });
-    setOpenEdit(false);
+      setUserInfo({ ...userInfo, username: newUsername, avatar_url: avatarUrl });
+      setOpenEdit(false);
+    } catch (err) {
+      console.error("Error updating profile:", err);
+      alert("Error updating profile");
+    }
   };
 
   return (
