@@ -17,54 +17,92 @@ const Chat = ({ selectedUser, currentUser }) => {
   }, [messages]);
 
   // Load messages between users
-  useEffect(() => {
-    if (!selectedUser || !currentUser) return;
-
-    const loadMessages = async () => {
+  const loadMessages = async (userA, userB) => {
+    if (!userA || !userB) return;
+    try {
       const { data, error } = await supabase
         .from("messages")
         .select("*")
         .or(
-          `and(sender_id.eq.${currentUser.id},receiver_id.eq.${selectedUser.id}),and(sender_id.eq.${selectedUser.id},receiver_id.eq.${currentUser.id})`
+          `and(sender_id.eq.${userA.id},receiver_id.eq.${userB.id}),and(sender_id.eq.${userB.id},receiver_id.eq.${userA.id})`
         )
         .order("created_at", { ascending: true });
 
-      if (!error) setMessages(data || []);
-      else console.error("Error fetching messages:", error);
-    };
+      if (error) {
+        console.error("Error fetching messages:", error);
+        return;
+      }
+      setMessages(data || []);
+    } catch (err) {
+      console.error("Unexpected loadMessages error:", err);
+    }
+  };
 
-    loadMessages();
+  useEffect(() => {
+    if (!selectedUser || !currentUser) {
+      setMessages([]);
+      return;
+    }
+    loadMessages(currentUser, selectedUser);
   }, [selectedUser, currentUser]);
 
-  // Real-time subscription for new messages
+  // Realtime subscription (listens to all INSERTs on messages)
   useEffect(() => {
-    if (!selectedUser || !currentUser) return;
+    if (!currentUser) return;
 
-    const channel = supabase
-      .channel("realtime-messages")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "messages" },
-        (payload) => {
-          const msg = payload.new;
+    // create channel once for this component instance
+    const channel = supabase.channel("realtime-messages");
 
-          // Only include messages for this chat
-          if (
+    channel.on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "messages" },
+      (payload) => {
+        // DEBUG - log everything to console so you can inspect incoming payloads
+        console.log("New message payload:", payload.new);
+
+        const msg = payload.new;
+
+        // If the new message is for this chat (either direction), append it
+        if (
+          selectedUser && currentUser &&
+          (
             (msg.sender_id === currentUser.id && msg.receiver_id === selectedUser.id) ||
             (msg.sender_id === selectedUser.id && msg.receiver_id === currentUser.id)
-          ) {
-            setMessages((prev) => [...prev, msg]);
+          )
+        ) {
+          setMessages((prev) => {
+            // avoid duplicates (if we already have the same id)
+            if (prev.some(m => m.id === msg.id)) return prev;
+            return [...prev, msg];
+          });
+        } else if (currentUser && msg.receiver_id === currentUser.id) {
+          // Message is for me but not for the currently open chat — you might want to:
+          // 1) increment unread counter in the parent (we recommend handling unread in App/List)
+          // 2) refresh the list of users / last message preview
+          // 3) if you want the chat to show instantly (even if not selected), consider refetching messages
+          // For safety, refetch the messages for the active chat to avoid missing anything:
+          if (selectedUser) {
+            // optionally re-fetch to grab any missing messages (safe fallback)
+            loadMessages(currentUser, selectedUser);
           }
         }
-      )
-      .subscribe();
+      }
+    );
 
-    return () => supabase.removeChannel(channel);
-  }, [selectedUser, currentUser]);
+    // subscribe and log status
+    channel.subscribe((status) => {
+      console.log("Realtime channel status:", status);
+    });
+
+    // cleanup
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentUser, selectedUser]); // recreate if currentUser or selectedUser changes
 
   // Send text message
   const sendMessage = async () => {
-    if (!text.trim()) return;
+    if (!text.trim() || !currentUser || !selectedUser) return;
 
     try {
       const { data, error } = await supabase
@@ -83,7 +121,7 @@ const Chat = ({ selectedUser, currentUser }) => {
         return;
       }
 
-      // Append the new message immediately
+      // Append the new message immediately (no need to wait for realtime)
       setMessages((prev) => [...prev, data]);
       setText(""); // Clear input
     } catch (err) {
@@ -95,11 +133,12 @@ const Chat = ({ selectedUser, currentUser }) => {
   const sendImage = async (file) => {
     if (!file || !currentUser?.id || !selectedUser?.id) return;
 
-    const filePath = `chat-images/${currentUser.id}-${Date.now()}.jpg`;
+    const ext = file.name?.split(".").pop() || "jpg";
+    const filePath = `chat_images/${currentUser.id}-${Date.now()}.${ext}`;
 
     // Upload image to Supabase Storage
     const { error: uploadError } = await supabase.storage
-      .from("chat-images")
+      .from("chat_images")
       .upload(filePath, file);
 
     if (uploadError) {
@@ -107,7 +146,7 @@ const Chat = ({ selectedUser, currentUser }) => {
       return;
     }
 
-    const { data } = supabase.storage.from("chat-images").getPublicUrl(filePath);
+    const { data } = supabase.storage.from("chat_images").getPublicUrl(filePath);
     const imageUrl = data.publicUrl;
 
     try {

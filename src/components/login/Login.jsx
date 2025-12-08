@@ -1,14 +1,12 @@
 import { useState } from "react";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import { supabase } from "../../lib/supabase";
 import "./login.scss";
 import Kitty from "../../utils/Kitty.jpg";
 import char from "../../utils/char.jpeg";
-import { supabase } from "../../lib/supabase";
 
 const Login = () => {
   const [avatar, setAvatar] = useState({ file: null, url: "" });
-  const navigate = useNavigate();
 
   const handleAvatar = (e) => {
     if (e.target.files[0]) {
@@ -67,10 +65,11 @@ const Login = () => {
       if (dbError) throw dbError;
 
       toast.success(`Welcome, ${username}!`);
-      navigate("/app");
+      // Redirect to app using HashRouter style
+      window.location.href = "#/app";
     } catch (err) {
       console.error(err);
-      toast.error(err.message);
+      toast.error(err.message || "Failed to register");
     }
   };
 
@@ -93,13 +92,15 @@ const Login = () => {
 
       if (error) throw error;
 
+      // Update user status to online
       await supabase
         .from("users")
         .update({ status: "online" })
         .eq("id", data.user.id);
 
       toast.success("Welcome back!");
-      navigate("/app");
+      // Redirect to app using HashRouter style
+      window.location.href = "#/app";
     } catch (err) {
       console.error(err);
       toast.error("Invalid email or password");
@@ -123,10 +124,9 @@ const Login = () => {
         <h2>Create an Account</h2>
         <form onSubmit={handleRegister}>
           <label htmlFor="file">
-            <img src={avatar.url || char || Kitty} alt="" />
+            <img src={avatar.url || char || Kitty} alt="avatar" />
             Upload an image
           </label>
-
           <input type="file" id="file" style={{ display: "none" }} onChange={handleAvatar} />
 
           <input type="text" placeholder="Username" name="username" />
