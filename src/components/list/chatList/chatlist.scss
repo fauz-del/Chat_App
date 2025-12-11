@@ -42,6 +42,7 @@
   }
 
   .item {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 15px;
@@ -75,18 +76,6 @@
         color: #fff;
         display: flex;
         align-items: center;
-
-        .unread-badge {
-          background-color: #ff3b30;
-          color: #fff;
-          font-size: 0.7rem;
-          padding: 2px 6px;
-          border-radius: 12px;
-          margin-left: 8px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-        }
       }
 
       p {
@@ -101,5 +90,18 @@
         }
       }
     }
+    .unread-badge {
+          position: absolute;
+          top: 5px;
+          right: 10px;
+          background-color: #ff3b30;
+          color: #fff;
+          font-size: 0.7rem;
+          padding: 2px 6px;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
   }
 }

@@ -1,64 +1,37 @@
 import "./list.scss";
 import { useState, useEffect } from "react";
-import UserInfo from "./userinfo/UserInfo";
 import ChatList from "./chatList/ChatList";
+import UserInfo from "./userinfo/UserInfo";
 import { supabase } from "../../lib/supabase";
 
-const List = ({
-  onSelectUser,        
-  currentUserId,
-  lastChattedUserId,   
-  currentUser,
-  messages,
-  onUserAdded
-}) => {
-  const [users, setUsers] = useState([]);
+const List = ({ currentUser, messages, onSelectUser }) => {
+  const [users, setUsers] = useState([]); // all users added to chat list
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      const { data, error } = await supabase
-        .from("users")
-        .select("*")
-        .neq("id", currentUserId);
-
-      if (!error) setUsers(data || []);
-    };
-    fetchUsers();
-  }, [currentUserId]);
-
-  useEffect(() => {
-    const channel = supabase
-      .channel("realtime-users")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "users" },
-        (payload) => {
-          const updated = payload.new;
-
-          setUsers((prev) => {
-            const exists = prev.find((u) => u.id === updated.id);
-            if (exists) {
-              return prev.map((u) => (u.id === updated.id ? updated : u));
-            }
-            return [...prev, updated];
-          });
-        }
-      )
-      .subscribe();
-
-    return () => supabase.removeChannel(channel);
+    // Optionally, you can load previously added users if you have a mapping table
+    // For now, it starts empty for new users
   }, []);
+
+  const handleUserAdded = (user) => {
+    // Avoid adding duplicates
+    setUsers((prev) => {
+      if (prev.find((u) => u.id === user.id)) return prev;
+      return [...prev, user];
+    });
+  };
 
   return (
     <div className="list">
-      {currentUser && <UserInfo currentUser={currentUser} />}
+      {/* Show current logged-in user info */}
+      <UserInfo currentUser={currentUser} />
 
+      {/* Chat list */}
       <ChatList
-        users={users}
-        onSelectUser={onSelectUser}       
-        currentUserId={currentUserId}
-        lastChattedUserId={lastChattedUserId}
-        onUserAdded={onUserAdded}
+        users={users}                     // pass users prop
+        onSelectUser={onSelectUser}
+        currentUserId={currentUser.id}
+        lastChattedUserId={null}          // track selected chat if needed
+        onUserAdded={handleUserAdded}
         messages={messages}
       />
     </div>
