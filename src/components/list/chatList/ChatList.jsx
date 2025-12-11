@@ -1,8 +1,8 @@
-import "./chatlist.scss";
 import { useState, useMemo } from "react";
 import { Search, Plus, Minus } from "lucide-react";
 import AddUser from "./addUser/addUser";
 import Kitty from "../../../utils/Kitty.jpg";
+import "./chatlist.scss";
 
 const ChatList = ({
   users = [],
@@ -15,7 +15,6 @@ const ChatList = ({
   const [addMode, setAddMode] = useState(false);
   const [search, setSearch] = useState("");
 
-  // Calculate unread count per user
   const unreadMap = useMemo(() => {
     const map = {};
     messages.forEach((msg) => {
@@ -26,14 +25,16 @@ const ChatList = ({
     return map;
   }, [messages, currentUserId]);
 
-  // Filter out current user and search
+
   const filteredUsers = users
-    .filter(u => u.id !== currentUserId)
-    .filter(u => u.username.toLowerCase().includes(search.toLowerCase()));
+    .filter((u) => u.id !== currentUserId)
+    .filter((u) => {
+      const username = u.username || u.user_metadata?.full_name || u.email;
+      return username.toLowerCase().includes(search.toLowerCase());
+    });
 
   return (
     <div className="chatlist">
-      {/* SEARCH AND ADD */}
       <div className="search">
         <div className="searchBar">
           <Search size={20} />
@@ -44,14 +45,16 @@ const ChatList = ({
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className="add" onClick={() => setAddMode(prev => !prev)}>
+
+        <div className="add" onClick={() => setAddMode((prev) => !prev)}>
           {addMode ? <Minus size={22} /> : <Plus size={22} />}
         </div>
       </div>
 
-      {/* USERS */}
       {filteredUsers.map((user) => {
         const unreadCount = unreadMap[user.id] || 0;
+        const username = user.username || user.user_metadata?.full_name || user.email;
+        const avatar = user.avatar_url || user.user_metadata?.avatar_url || Kitty;
 
         return (
           <div
@@ -59,23 +62,20 @@ const ChatList = ({
             className={`item ${user.id === lastChattedUserId ? "active" : ""}`}
             onClick={() => onSelectUser(user)}
           >
-            <img src={user.avatar_url || Kitty} alt={user.username} />
+            <img src={avatar} alt={username} />
+
             <div className="texts">
-              <span>{user.username}</span>
+              <span>{username}</span>
               <p className={`status ${user.status}`}>
                 {user.status === "online" ? "Online" : "Offline"}
               </p>
             </div>
 
-            {/* Unread Badge */}
-            {unreadCount > 0 && (
-              <span className="unread-badge">{unreadCount}</span>
-            )}
+            {unreadCount > 0 && <span className="unread-badge">{unreadCount}</span>}
           </div>
         );
       })}
 
-      {/* ADD USER FORM */}
       {addMode && (
         <AddUser
           onUserAdded={onUserAdded}

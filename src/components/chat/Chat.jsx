@@ -5,176 +5,161 @@ import EmojiPicker from "emoji-picker-react";
 import { supabase } from "../../lib/supabase";
 import Kitty from "../../utils/Kitty.jpg";
 
-const Chat = ({ selectedUser, currentUser }) => {
-  const [messages, setMessages] = useState([]);
+const Chat = ({ selectedUser, currentUser, messages, setMessages }) => {
   const [text, setText] = useState("");
   const [openEmoji, setOpenEmoji] = useState(false);
   const endRef = useRef(null);
 
-  // Auto-scroll when messages change
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Load messages between users
-  const loadMessages = async (userA, userB) => {
-    if (!userA || !userB) return;
-    try {
+  useEffect(() => {
+    if (!selectedUser || !currentUser) return;
+
+    const loadMessages = async () => {
+      const orFilter = `and(sender_id.eq.${currentUser.id},receiver_id.eq.${selectedUser.id}),and(sender_id.eq.${selectedUser.id},receiver_id.eq.${currentUser.id})`;
+
       const { data, error } = await supabase
         .from("messages")
         .select("*")
-        .or(
-          `and(sender_id.eq.${userA.id},receiver_id.eq.${userB.id}),and(sender_id.eq.${userB.id},receiver_id.eq.${userA.id})`
-        )
+        .or(orFilter)
         .order("created_at", { ascending: true });
 
       if (error) {
-        console.error("Error fetching messages:", error);
+        console.error("Fetch error:", error);
         return;
       }
-      setMessages(data || []);
-    } catch (err) {
-      console.error("Unexpected loadMessages error:", err);
-    }
-  };
 
-  useEffect(() => {
-    if (!selectedUser || !currentUser) {
-      setMessages([]);
-      return;
-    }
-    loadMessages(currentUser, selectedUser);
+      setMessages(data || []);
+
+      const unread = data.filter(
+        (m) =>
+          m.sender_id === selectedUser.id &&
+          m.receiver_id === currentUser.id &&
+          !m.read
+      );
+
+      if (unread.length > 0) {
+        await supabase
+          .from("messages")
+          .update({ read: true })
+          .in("id", unread.map((m) => m.id));
+
+        setMessages((prev) =>
+          prev.map((m) =>
+            unread.some((u) => u.id === m.id) ? { ...m, read: true } : m
+          )
+        );
+      }
+    };
+
+    loadMessages();
   }, [selectedUser, currentUser]);
 
-  // Realtime subscription (listens to all INSERTs on messages)
   useEffect(() => {
-    if (!currentUser) return;
+    if (!selectedUser || !currentUser) return;
 
-    // create channel once for this component instance
-    const channel = supabase.channel("realtime-messages");
+    const channel = supabase.channel(
+      `messages-${currentUser.id}-${selectedUser.id}`
+    );
+
+    const filter = `or(sender_id=eq.${currentUser.id},receiver_id=eq.${currentUser.id})`;
 
     channel.on(
       "postgres_changes",
-      { event: "INSERT", schema: "public", table: "messages" },
-      (payload) => {
-        // DEBUG - log everything to console so you can inspect incoming payloads
-        console.log("New message payload:", payload.new);
-
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "messages",
+        filter
+      },
+      async (payload) => {
         const msg = payload.new;
 
-        // If the new message is for this chat (either direction), append it
-        if (
-          selectedUser && currentUser &&
-          (
-            (msg.sender_id === currentUser.id && msg.receiver_id === selectedUser.id) ||
-            (msg.sender_id === selectedUser.id && msg.receiver_id === currentUser.id)
-          )
-        ) {
-          setMessages((prev) => {
-            // avoid duplicates (if we already have the same id)
-            if (prev.some(m => m.id === msg.id)) return prev;
-            return [...prev, msg];
-          });
-        } else if (currentUser && msg.receiver_id === currentUser.id) {
-          // Message is for me but not for the currently open chat — you might want to:
-          // 1) increment unread counter in the parent (we recommend handling unread in App/List)
-          // 2) refresh the list of users / last message preview
-          // 3) if you want the chat to show instantly (even if not selected), consider refetching messages
-          // For safety, refetch the messages for the active chat to avoid missing anything:
-          if (selectedUser) {
-            // optionally re-fetch to grab any missing messages (safe fallback)
-            loadMessages(currentUser, selectedUser);
-          }
+        const isChatMessage =
+          (msg.sender_id === currentUser.id &&
+            msg.receiver_id === selectedUser.id) ||
+          (msg.sender_id === selectedUser.id &&
+            msg.receiver_id === currentUser.id);
+
+        if (!isChatMessage) return;
+
+        setMessages((prev) => [...prev, msg]);
+
+        if (msg.sender_id === selectedUser.id && !msg.read) {
+          await supabase
+            .from("messages")
+            .update({ read: true })
+            .eq("id", msg.id);
+
+          setMessages((prev) =>
+            prev.map((m) => (m.id === msg.id ? { ...m, read: true } : m))
+          );
         }
       }
     );
 
-    // subscribe and log status
-    channel.subscribe((status) => {
-      console.log("Realtime channel status:", status);
-    });
+    channel.subscribe();
 
-    // cleanup
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [currentUser, selectedUser]); // recreate if currentUser or selectedUser changes
+    return () => supabase.removeChannel(channel);
+  }, [selectedUser, currentUser]);
 
-  // Send text message
   const sendMessage = async () => {
-    if (!text.trim() || !currentUser || !selectedUser) return;
+    if (!text.trim() || !selectedUser) return;
 
-    try {
-      const { data, error } = await supabase
-        .from("messages")
-        .insert({
-          sender_id: currentUser.id,
-          receiver_id: selectedUser.id,
-          content: text,
-          image_url: null,
-        })
-        .select()
-        .single();
+    const { data, error } = await supabase
+      .from("messages")
+      .insert({
+        sender_id: currentUser.id,
+        receiver_id: selectedUser.id,
+        content: text,
+        image_url: null,
+        read: false,
+      })
+      .select()
+      .single();
 
-      if (error) {
-        console.error("Error sending message:", error);
-        return;
-      }
-
-      // Append the new message immediately (no need to wait for realtime)
-      setMessages((prev) => [...prev, data]);
-      setText(""); // Clear input
-    } catch (err) {
-      console.error("Unexpected error sending message:", err);
-    }
-  };
-
-  // Send image message
-  const sendImage = async (file) => {
-    if (!file || !currentUser?.id || !selectedUser?.id) return;
-
-    const ext = file.name?.split(".").pop() || "jpg";
-    const filePath = `chat_images/${currentUser.id}-${Date.now()}.${ext}`;
-
-    // Upload image to Supabase Storage
-    const { error: uploadError } = await supabase.storage
-      .from("chat_images")
-      .upload(filePath, file);
-
-    if (uploadError) {
-      console.error("Image upload failed:", uploadError);
+    if (error) {
+      console.error("Send error:", error);
       return;
     }
 
-    const { data } = supabase.storage.from("chat_images").getPublicUrl(filePath);
-    const imageUrl = data.publicUrl;
-
-    try {
-      const { data: insertedData, error } = await supabase
-        .from("messages")
-        .insert({
-          sender_id: currentUser.id,
-          receiver_id: selectedUser.id,
-          content: "",
-          image_url: imageUrl,
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error("Error sending image message:", error);
-        return;
-      }
-
-      // Append image message immediately
-      setMessages((prev) => [...prev, insertedData]);
-    } catch (err) {
-      console.error("Unexpected error sending image:", err);
-    }
+    setMessages((prev) => [...prev, data]);
+    setText("");
   };
 
-  // Handle emoji selection
-  const handleEmoji = (e) => setText((prev) => prev + e.emoji);
+  const sendImage = async (file) => {
+    if (!file || !selectedUser) return;
+
+    const filePath = `chat-images/${currentUser.id}-${Date.now()}.jpg`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("chat-images")
+      .upload(filePath, file);
+
+    if (uploadError) return console.error("Upload error:", uploadError);
+
+    const { data } = supabase.storage.from("chat-images").getPublicUrl(filePath);
+    const url = data.publicUrl;
+
+    const { data: inserted, error } = await supabase
+      .from("messages")
+      .insert({
+        sender_id: currentUser.id,
+        receiver_id: selectedUser.id,
+        content: "",
+        image_url: url,
+        read: false,
+      })
+      .select()
+      .single();
+
+    if (error) console.error("Send image error:", error);
+    else setMessages((prev) => [...prev, inserted]);
+  };
+
+  const handleEmoji = (emojiData) => setText((prev) => prev + emojiData.emoji);
 
   if (!selectedUser)
     return <div className="chat empty">Select a user to start chatting</div>;
@@ -190,7 +175,6 @@ const Chat = ({ selectedUser, currentUser }) => {
             <p>{selectedUser.status === "online" ? "Online" : "Offline"}</p>
           </div>
         </div>
-
         <div className="icons">
           <Phone size={20} />
           <Video size={20} />
@@ -198,33 +182,39 @@ const Chat = ({ selectedUser, currentUser }) => {
         </div>
       </div>
 
-      {/* MESSAGES */}
       <div className="center">
-        {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={msg.sender_id === currentUser.id ? "message own" : "message"}
-          >
-            {msg.sender_id !== currentUser.id && (
-              <img src={selectedUser.avatar_url || Kitty} alt="" />
-            )}
+        {messages
+          .filter(
+            (m) =>
+              (m.sender_id === currentUser.id &&
+                m.receiver_id === selectedUser.id) ||
+              (m.sender_id === selectedUser.id &&
+                m.receiver_id === currentUser.id)
+          )
+          .map((msg) => (
+            <div
+              key={msg.id}
+              className={msg.sender_id === currentUser.id ? "message own" : "message"}
+            >
+              {msg.sender_id !== currentUser.id && (
+                <img src={selectedUser.avatar_url || Kitty} alt="" />
+              )}
 
-            <div className="texts">
-              {msg.image_url && <img src={msg.image_url} alt="sent" />}
-              {msg.content && <p>{msg.content}</p>}
-              <span>
-                {new Date(msg.created_at).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </span>
+              <div className="texts">
+                {msg.image_url && <img src={msg.image_url} alt="sent" />}
+                {msg.content && <p>{msg.content}</p>}
+                <span>
+                  {new Date(msg.created_at).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+              </div>
             </div>
-          </div>
-        ))}
-        <div ref={endRef}></div>
+          ))}
+        <div ref={endRef} />
       </div>
 
-      {/* INPUT BOX */}
       <div className="bottom">
         <div className="icons">
           <label>
@@ -236,7 +226,6 @@ const Chat = ({ selectedUser, currentUser }) => {
               onChange={(e) => sendImage(e.target.files[0])}
             />
           </label>
-
           <Camera size={20} />
           <Mic size={20} />
         </div>
@@ -250,7 +239,7 @@ const Chat = ({ selectedUser, currentUser }) => {
         />
 
         <div className="emoji">
-          <Smile size={20} onClick={() => setOpenEmoji((prev) => !prev)} />
+          <Smile size={20} onClick={() => setOpenEmoji((p) => !p)} />
           {openEmoji && (
             <div className="picker">
               <EmojiPicker onEmojiClick={handleEmoji} />

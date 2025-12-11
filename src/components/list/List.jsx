@@ -5,16 +5,15 @@ import ChatList from "./chatList/ChatList";
 import { supabase } from "../../lib/supabase";
 
 const List = ({
-  onSelectUser,
+  onSelectUser,        
   currentUserId,
-  lastChattedUserId,
+  lastChattedUserId,   
   currentUser,
   messages,
   onUserAdded
 }) => {
   const [users, setUsers] = useState([]);
 
-  // Load initial users
   useEffect(() => {
     const fetchUsers = async () => {
       const { data, error } = await supabase
@@ -27,7 +26,6 @@ const List = ({
     fetchUsers();
   }, [currentUserId]);
 
-  // Real-time user updates (status, new users)
   useEffect(() => {
     const channel = supabase
       .channel("realtime-users")
@@ -53,11 +51,11 @@ const List = ({
 
   return (
     <div className="list">
-      <UserInfo currentUser={currentUser} />
+      {currentUser && <UserInfo currentUser={currentUser} />}
 
       <ChatList
         users={users}
-        onSelectUser={onSelectUser}
+        onSelectUser={onSelectUser}       
         currentUserId={currentUserId}
         lastChattedUserId={lastChattedUserId}
         onUserAdded={onUserAdded}
