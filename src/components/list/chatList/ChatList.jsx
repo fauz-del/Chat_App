@@ -5,7 +5,7 @@ import Kitty from "../../../utils/Kitty.jpg";
 import "./chatlist.scss";
 
 const ChatList = ({
-  users = [],
+  users = [],          // users already added to chat list
   onSelectUser,
   currentUserId,
   lastChattedUserId,
@@ -15,6 +15,7 @@ const ChatList = ({
   const [addMode, setAddMode] = useState(false);
   const [search, setSearch] = useState("");
 
+  // Count unread messages
   const unreadMap = useMemo(() => {
     const map = {};
     messages.forEach((msg) => {
@@ -25,7 +26,6 @@ const ChatList = ({
     return map;
   }, [messages, currentUserId]);
 
-
   const filteredUsers = users
     .filter((u) => u.id !== currentUserId)
     .filter((u) => {
@@ -35,6 +35,7 @@ const ChatList = ({
 
   return (
     <div className="chatlist">
+      {/* SEARCH BAR & ADD BUTTON */}
       <div className="search">
         <div className="searchBar">
           <Search size={20} />
@@ -51,6 +52,7 @@ const ChatList = ({
         </div>
       </div>
 
+      {/* USERS */}
       {filteredUsers.map((user) => {
         const unreadCount = unreadMap[user.id] || 0;
         const username = user.username || user.user_metadata?.full_name || user.email;
@@ -76,6 +78,7 @@ const ChatList = ({
         );
       })}
 
+      {/* ADD USER PANEL */}
       {addMode && (
         <AddUser
           onUserAdded={onUserAdded}

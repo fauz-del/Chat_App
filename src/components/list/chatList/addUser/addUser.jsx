@@ -9,32 +9,36 @@ const AddUser = ({ onUserAdded, currentUserId, existingUsers }) => {
 
   useEffect(() => {
     const loadUsers = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("users")
-          .select("id, username, avatar_url, status") // select only needed fields
-          .neq("id", currentUserId); // exclude current user
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .neq("id", currentUserId);
 
-        if (error) throw error;
-
-        // Exclude users already in chat list
+      if (!error) {
+  
         const filtered = data.filter(
           u => !existingUsers.some(ex => ex.id === u.id)
         );
-
         setFoundUsers(filtered);
-      } catch (err) {
-        console.error("Error loading users:", err.message);
       }
     };
 
     loadUsers();
   }, [currentUserId, existingUsers]);
 
-  const handleAdd = (user) => {
-    onUserAdded(user);
-    // Optionally remove from foundUsers so it disappears after adding
-    setFoundUsers(prev => prev.filter(u => u.id !== user.id));
+  const handleAdd = async (user) => {
+  
+    const { error } = await supabase
+      .from("user_chats")
+      .insert({ user_id: currentUserId, 
+        chat_with_id: user.id });
+
+    if (error) {
+      console.error("Error adding user to chat list:", error);
+      return;
+    }
+
+    fetchChatList();
   };
 
   return (
@@ -45,17 +49,17 @@ const AddUser = ({ onUserAdded, currentUserId, existingUsers }) => {
         value={query}
         onChange={e => setQuery(e.target.value)}
       />
-
-      {foundUsers.filter(u => u.username.toLowerCase().includes(query.toLowerCase())).map(user => (
-        <div key={user.id} className="user">
-          <div className="detail">
-            <img src={user.avatar_url || Kitty} alt={user.username} />
-            <span>{user.username}</span>
+      {foundUsers
+        .filter(u => (u.username || "").toLowerCase().includes(query.toLowerCase()))
+        .map(user => (
+          <div key={user.id} className="user">
+            <div className="detail">
+              <img src={user.avatar_url || Kitty} alt={user.username} />
+              <span>{user.username}</span>
+            </div>
+            <button onClick={() => handleAdd(user)}>Add User</button>
           </div>
-          <button onClick={() => handleAdd(user)}>Add User</button>
-        </div>
-      ))}
-
+        ))}
       {foundUsers.length === 0 && <p>No user found</p>}
     </div>
   );
